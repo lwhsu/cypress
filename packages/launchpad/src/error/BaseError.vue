@@ -109,12 +109,6 @@ import ErrorOutlineIcon from '~icons/cy/status-errored-outline_x16.svg'
 import ErrorCodeFrame from './ErrorCodeFrame.vue'
 
 gql`
-mutation BaseError_RestartCypress {
-  reinitializeCypress
-}
-`
-
-gql`
 fragment BaseError on ErrorWrapper {
   title
   errorName
