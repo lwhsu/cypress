@@ -157,6 +157,21 @@ describe('http/response-middleware', function () {
       })
     })
 
+    it('doesn\'t do anything when "experimentalMultiDomain" config flag is not set to true"', function () {
+      prepareContext({
+        incomingRes: {
+          headers: {
+            'content-type': 'text/html',
+          },
+        },
+      })
+
+      return testMiddleware([MaybeDelayForMultiDomain], ctx)
+      .then(() => {
+        expect(ctx.serverBus.emit).not.to.be.called
+      })
+    })
+
     it('waits for server signal if res is html, letting it continue after receiving ready:for:domain', function () {
       prepareContext({
         incomingRes: {
@@ -166,6 +181,9 @@ describe('http/response-middleware', function () {
         },
         req: {
           isAUTFrame: true,
+        },
+        config: {
+          experimentalMultiDomain: true,
         },
       })
 
@@ -188,6 +206,9 @@ describe('http/response-middleware', function () {
             ],
           },
           isAUTFrame: true,
+        },
+        config: {
+          experimentalMultiDomain: true,
         },
       })
 
@@ -224,6 +245,165 @@ describe('http/response-middleware', function () {
         getRemoteState () {
           return {
             strategy: 'foo',
+          }
+        },
+        debug () {},
+        onError (error) {
+          throw error
+        },
+        ..._.omit(props, 'incomingRes', 'res', 'req'),
+      }
+    }
+  })
+
+  describe('SetInjectionLevel', function () {
+    const { SetInjectionLevel } = ResponseMiddleware
+    let ctx
+
+    it('doesn\'t inject anything when not html', function () {
+      prepareContext({
+        req: {
+          cookies: {},
+          headers: {},
+        },
+      })
+
+      return testMiddleware([SetInjectionLevel], ctx)
+      .then(() => {
+        expect(ctx.res.wantsInjection).to.be.false
+      })
+    })
+
+    it('doesn\'t inject anything when not rendered html', function () {
+      prepareContext({
+        renderedHTMLOrigins: {},
+        getRenderedHTMLOrigins () {
+          return this.renderedHTMLOrigins
+        },
+        req: {
+          cookies: {},
+          headers: {},
+        },
+        incomingRes: {
+          headers: {
+            'content-type': 'text/html',
+          },
+        },
+      })
+
+      return testMiddleware([SetInjectionLevel], ctx)
+      .then(() => {
+        expect(ctx.res.wantsInjection).to.be.false
+      })
+    })
+
+    it('doesn\'t inject anything when not AUT frame', function () {
+      prepareContext({
+        req: {
+          cookies: {},
+          headers: {},
+        },
+        incomingRes: {
+          headers: {
+            'content-type': 'text/html',
+          },
+        },
+      })
+
+      return testMiddleware([SetInjectionLevel], ctx)
+      .then(() => {
+        expect(ctx.res.wantsInjection).to.be.false
+      })
+    })
+
+    it('doesn\'t inject anything when "experimentalMultiDomain" config flag is not set to true for cross-domain html"', function () {
+      prepareContext({
+        req: {
+          proxiedUrl: 'http://foobar.com',
+          isAUTFrame: true,
+          cookies: {},
+          headers: {},
+        },
+        incomingRes: {
+          headers: {
+            'content-type': 'text/html',
+          },
+        },
+      })
+
+      return testMiddleware([SetInjectionLevel], ctx)
+      .then(() => {
+        expect(ctx.res.wantsInjection).to.be.false
+      })
+    })
+
+    it('injects "fullMultiDomain" when "experimentalMultiDomain" config flag is set to true for cross-domain html"', function () {
+      prepareContext({
+        req: {
+          proxiedUrl: 'http://foobar.com',
+          isAUTFrame: true,
+          cookies: {},
+          headers: {},
+        },
+        incomingRes: {
+          headers: {
+            'content-type': 'text/html',
+          },
+        },
+        config: {
+          experimentalMultiDomain: true,
+        },
+      })
+
+      return testMiddleware([SetInjectionLevel], ctx)
+      .then(() => {
+        expect(ctx.res.wantsInjection).to.equal('fullMultiDomain')
+      })
+    })
+
+    it('performs full injection on initial AUT html origin', function () {
+      prepareContext({
+        req: {
+          isAUTFrame: true,
+          cookies: {
+            '__cypress.initial': 'true',
+          },
+          headers: {},
+        },
+        incomingRes: {
+          headers: {
+            'content-type': 'text/html',
+          },
+        },
+      })
+
+      return testMiddleware([SetInjectionLevel], ctx)
+      .then(() => {
+        expect(ctx.res.wantsInjection).to.equal('full')
+      })
+    })
+
+    function prepareContext (props) {
+      ctx = {
+        incomingRes: {
+          headers: {},
+          ...props.incomingRes,
+        },
+        res: {
+          headers: {},
+          ...props.res,
+        },
+        req: {
+          proxiedUrl: 'http:127.0.0.1:3501/multi-domain.html',
+          headers: {},
+          ...props.req,
+        },
+        getRemoteState () {
+          return {
+            strategy: 'http',
+            props: {
+              port: '3501', tld: '', domain: '127.0.0.1',
+            },
           }
         },
         debug () {},
