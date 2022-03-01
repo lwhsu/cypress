@@ -90,6 +90,7 @@ export const e2eProjectDirs = [
   'plugins-root-async-error',
   'plugins-root-sync-error',
   'pristine',
+  'pristine-esm',
   'pristine-npm',
   'pristine-pnpm',
   'pristine-with-ct-testing',
