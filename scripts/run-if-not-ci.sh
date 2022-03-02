@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
 # If we're in CI, exit early
-if [[ $CI ]]; then exit 0; fi
+if [ -n $CI ]; then exit 0; fi
 # otherwise, run the supplied command
-"${@:1}"
+$@
